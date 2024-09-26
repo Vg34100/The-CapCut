@@ -6,9 +6,10 @@
 ## Expected Process
 - Extract audio(?): ```audio_extract.py```
 - Extract transcript/subtitles ```subtitle_generator.py```
-- Decide sections
+- Decide sections ```clip_decider.py```
+- Cut sections ```clip_creator.py```
 - Cut into short format ```short_scene_formatter.py```
 
-- Extract transcript/subtitles
-- Fix transcript/subtitles
+- Extract transcript/subtitles ```subtitle_generator.py```
+- Fix transcript/subtitles - I'll save this for later
 - Add subtitle to section ```ffmpeg_subtitle.py```
