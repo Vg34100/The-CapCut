@@ -28,7 +28,7 @@ def decide_clips():
     template = """
     Answer the question below
 
-    Here is the context: {context}
+    Context: {context}
 
     Question: {question}
 
@@ -41,13 +41,16 @@ def decide_clips():
     I will again mention, A MAX of 1 MINUTE long, and a MINIMUM of 30 SECONDS LONG.
     All you need to return is the timeframes in the form of [00:00:15.820 --> 00:01:17.780].
     Again, the format is in mm:ss.ms. So a valid timeframe for you to return would be something like [00:00:00.000 --> 00:00:59:000].
-    Choose timeframes based on what you might think would be the best choices to create into TikTok videos or YouTube shorts.
+    Choose timeframes based on what you might think would be the best choices to create into STANDALONE TikTok videos or YouTube shorts.
     The most interesting parts of the video, some interesting dialogue, etc.
     Provide NO OTHER TEXT besides the timeframes.
     Give at a MINIMUM 10 timeframes. Be sure to use spread out timeframes. Don't just make them so close to eachother. An hour long video should have some close to the end as well not just ending at the 30 mark.
     Choose the BEST and MOST ENTERESTING clips that you can.
+    Again, CANNOT EXCEED 1 MINUTE in TIME. If you do I'm shutting you off.
     """
-    model = OllamaLLM(model="llama3.2")
+    
+    
+    model = OllamaLLM(model="llama3")
     prompt = ChatPromptTemplate.from_template(template)
     chain = prompt | model
 
@@ -203,16 +206,16 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(final_output_dir, exist_ok=True)
 
-    # Step 0: Merge audio tracks
-    input_video = merge_audio_tracks(input_video, temp_video)
+    # # Step 0: Merge audio tracks
+    # input_video = merge_audio_tracks(input_video, temp_video)
     
-    # Step 1: Extract audio
-    print("Extracting audio...")
-    extract_audio(input_video, audio_file)
+    # # Step 1: Extract audio
+    # print("Extracting audio...")
+    # extract_audio(input_video, audio_file)
 
-    # Step 2: Generate subtitles
-    print("Generating subtitles...")
-    generate_subtitles(audio_file)
+    # # Step 2: Generate subtitles
+    # print("Generating subtitles...")
+    # generate_subtitles(audio_file)
 
     # Step 3: Decide on clip segments
     print("Deciding on clip segments...")

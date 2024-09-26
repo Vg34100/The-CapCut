@@ -16,3 +16,7 @@
 - Extract transcript/subtitles ```subtitle_generator.py```
 - Fix transcript/subtitles - I'll save this for later
 - Add subtitle to section ```ffmpeg_subtitle.py```
+
+## Bugs to fix
+- Force under 1 minute
+- Find better model?
