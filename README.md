@@ -4,6 +4,9 @@
 
 
 ## Expected Process
+
+- Merge audio track: ```track_merger.py```
+
 - Extract audio(?): ```audio_extract.py```
 - Extract transcript/subtitles ```subtitle_generator.py```
 - Decide sections ```clip_decider.py```
