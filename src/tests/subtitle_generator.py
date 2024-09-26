@@ -3,7 +3,7 @@ import whisper
 import whisper.utils
 
 # Load the model and transcribe the audio
-model = whisper.load_model("base")
+model = whisper.load_model("medium.en")
 result = model.transcribe("data/temp/audio.mp3", verbose=True, language='en', word_timestamps=True, task="transcribe")
 
 # Set VTT Line and words width

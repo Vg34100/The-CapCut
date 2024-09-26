@@ -7,7 +7,7 @@
 - Extract audio(?): ```audio_extract.py```
 - Extract transcript/subtitles ```subtitle_generator.py```
 - Decide sections
-- Cut into short format
+- Cut into short format ```short_scene_formatter.py```
 
 - Extract transcript/subtitles
 - Fix transcript/subtitles
