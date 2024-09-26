@@ -45,14 +45,13 @@ def add_subtitles(input_video, subtitle_file, output_video, subtitle_format="srt
 
 # Example usage:
 input_video = "data/input/test1.mp4"
-subtitle_file = "data/out/test1.srt"  # or "subtitles.ass"
-output_video = "data/out/output_with_subtitles.mp4"
+subtitle_file = "data/temp/audio.srt"  # or "subtitles.ass"
+output_video = "data/out/output.mp4"
 options = {
     "align": "2",
     "font_name": "Indigo Regular",
     "font_size": "15",
     "margin_v": 70,
-    
 }
 
 add_subtitles(input_video, subtitle_file, output_video, subtitle_format="srt")

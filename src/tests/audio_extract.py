@@ -15,7 +15,7 @@ def extract_audio(video_path, audio_path):
 
 # Example usage
 video_file = "data/input/test1.mp4"
-audio_file = "data/out/audio.mp3"
+audio_file = "data/temp/audio.mp3"
 
 extract_audio(video_file, audio_file)
 print(f"Audio extracted to {audio_file}")

@@ -4,7 +4,7 @@ import whisper.utils
 
 # Load the model and transcribe the audio
 model = whisper.load_model("base")
-result = model.transcribe(r"data\input\test1.mp4", verbose=True, language='en', word_timestamps=True, task="transcribe")
+result = model.transcribe("data/temp/audio.mp3", verbose=True, language='en', word_timestamps=True, task="transcribe")
 
 # Set VTT Line and words width
 word_options = {
@@ -14,9 +14,9 @@ word_options = {
     "max_words_per_line": 4
 }
 
-srt_writer = whisper.utils.get_writer("srt", "data/out")
+srt_writer = whisper.utils.get_writer("srt", "data/temp")
 # Write the result to an SRT file
-srt_writer(result, r"data\input\test1.mp4", word_options)
+srt_writer(result, "data/temp/audio.mp3", word_options)
 
 
 print("SRT file has been generated.")
