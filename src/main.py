@@ -45,8 +45,9 @@ def decide_clips():
     The most interesting parts of the video, some interesting dialogue, etc.
     Provide NO OTHER TEXT besides the timeframes.
     Give at a MINIMUM 10 timeframes. Be sure to use spread out timeframes. Don't just make them so close to eachother. An hour long video should have some close to the end as well not just ending at the 30 mark.
+    Choose the BEST and MOST ENTERESTING clips that you can.
     """
-    model = OllamaLLM(model="llama3")
+    model = OllamaLLM(model="llama3.2")
     prompt = ChatPromptTemplate.from_template(template)
     chain = prompt | model
 
@@ -135,16 +136,7 @@ def get_video_info(input_file):
     return json.loads(result.stdout)
 
 def add_subtitles(input_video, subtitle_file, output_video, subtitle_format="srt"):
-    # if subtitle_format == "srt":
-    #     ass_subtitle_file = os.path.splitext(subtitle_file)[0] + ".ass"
-    #     convert_cmd = [
-    #         "ffmpeg",
-    #         "-i", subtitle_file,
-    #         ass_subtitle_file
-    #     ]
-    #     subprocess.run(convert_cmd, check=True)
-    #     subtitle_file = ass_subtitle_file
-
+    
     options = {
         "align": "2",
         "font_name": "Indigo Regular",
