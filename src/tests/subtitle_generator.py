@@ -1,3 +1,4 @@
+#subtitle_genrator.py
 import datetime
 import whisper
 import whisper.utils
