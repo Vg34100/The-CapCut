@@ -1,3 +1,4 @@
+# main.py
 import os
 import subprocess
 from moviepy.editor import VideoFileClip
@@ -49,7 +50,6 @@ def decide_clips():
     Again, CANNOT EXCEED 1 MINUTE in TIME. If you do I'm shutting you off.
     """
     
-    
     model = OllamaLLM(model="llama3")
     prompt = ChatPromptTemplate.from_template(template)
     chain = prompt | model
@@ -64,6 +64,7 @@ def decide_clips():
         tf.write(result)
 
 def split_video(input_file, output_dir, timeframes):
+    
     os.makedirs(output_dir, exist_ok=True)
     
     for i, (start, end) in enumerate(timeframes):
@@ -142,7 +143,7 @@ def add_subtitles(input_video, subtitle_file, output_video, subtitle_format="srt
     
     options = {
         "align": "2",
-        "font_name": "Indigo Regular",
+        "font_name": "MADE TOMMY",
         "font_size": "15",
         "margin_v": 70,
     }
@@ -194,7 +195,7 @@ def merge_audio_tracks(input_file, output_file):
 
 
 def main():
-    input_video = "data/input/RAW__09-24-24__[21].mp4"
+    input_video = r"A:\Media\The Video Depot\VODS_2024-09-30\RAW__09-30-24__[20].mp4"
     temp_video = "data/temp/merged_audio_video.mp4"
     audio_file = "data/temp/audio.mp3"
     srt_file = "data/temp/audio.srt"
@@ -206,16 +207,16 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(final_output_dir, exist_ok=True)
 
-    # # Step 0: Merge audio tracks
-    # input_video = merge_audio_tracks(input_video, temp_video)
+    # Step 0: Merge audio tracks
+    merge_audio_tracks(input_video, temp_video)
     
-    # # Step 1: Extract audio
-    # print("Extracting audio...")
-    # extract_audio(input_video, audio_file)
+    # Step 1: Extract audio
+    print("Extracting audio...")
+    extract_audio(temp_video, audio_file)
 
-    # # Step 2: Generate subtitles
-    # print("Generating subtitles...")
-    # generate_subtitles(audio_file)
+    # Step 2: Generate subtitles
+    print("Generating subtitles...")
+    generate_subtitles(audio_file)
 
     # Step 3: Decide on clip segments
     print("Deciding on clip segments...")
@@ -224,7 +225,7 @@ def main():
     # Step 4: Split video into segments
     print("Splitting video into segments...")
     timeframes = parse_timeframes(decision_file)
-    split_video(input_video, output_dir, timeframes)
+    split_video(temp_video, output_dir, timeframes)
 
     # Step 5: Convert each segment to 9:16 format and add subtitles
     for i, segment in enumerate(os.listdir(output_dir)):
@@ -251,6 +252,7 @@ def main():
             os.remove(temp_srt)
             os.remove(input_segment)
 
+    os.remove(temp_video)
     os.remove(srt_file)
     os.remove(audio_file)
     os.remove(decision_file)
