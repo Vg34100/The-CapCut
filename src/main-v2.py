@@ -14,8 +14,14 @@ import shutil
 import time
 
 CACHE_DIR = "data/cache"
-MAX_CACHE_SIZE_MB = 1000  # Maximum cache size in MB
+TEMP_DIR = "data/temp"
+MAX_CACHE_SIZE_MB = 1000  # Maximum cache size in M
 MAX_CACHE_AGE_DAYS = 14  # Maximum file age in days
+
+def generate_temp_filename(input_video, description, ext):
+    """Generate a custom cache filename based on the input video name."""
+    base_name = os.path.splitext(os.path.basename(input_video))[0]
+    return os.path.join(TEMP_DIR, f"{base_name}-{description}.{ext}")
 
 def generate_cache_filename(input_video, description, ext):
     """Generate a custom cache filename based on the input video name."""
@@ -26,7 +32,7 @@ def move_to_cache(file_path):
     """Move a file to the cache folder."""
     if os.path.exists(file_path):
         new_path = os.path.join(CACHE_DIR, os.path.basename(file_path))
-        shutil.move(file_path, new_path)
+        shutil.copy(file_path, new_path)
         logging.info(f"Moved {file_path} to cache as {new_path}")
 
 def clean_cache():
@@ -280,7 +286,7 @@ def main(input_video):
     log_folder = "log"
     os.makedirs(log_folder, exist_ok=True)
     log_filename = os.path.join(log_folder, f"log_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
-    
+
     # Ensure cache folder exists
     os.makedirs(CACHE_DIR, exist_ok=True)
 
@@ -291,16 +297,17 @@ def main(input_video):
         handlers=[logging.FileHandler(log_filename), logging.StreamHandler()]
     )    
     
-    # temp_video = "data/temp/merged_audio_video.mp4"
-    # audio_file = "data/temp/audio.mp3"
-    # srt_file = "data/temp/audio.srt"
-    # decision_file = "data/temp/decision.json"
+    temp_video = generate_temp_filename(input_video, "merged", "mp4")
+    audio_file = generate_temp_filename(input_video, "audio", "mp3")
+    srt_file = generate_temp_filename(input_video, "audio", "srt")
+    decision_file = generate_temp_filename(input_video, "decision", "json")
     
-    temp_video = generate_cache_filename(input_video, "merged", "mp4")  # Cache merged video
-    audio_file = generate_cache_filename(input_video, "audio", "mp3")  # Cache audio file
-    srt_file = generate_cache_filename(input_video, "audio", "srt")  # Cache SRT file
-    decision_file = generate_cache_filename(input_video, "decision", "json")  # Cache decision JSON
+    c_temp_video = generate_cache_filename(input_video, "merged", "mp4")  # Cache merged video
+    c_audio_file = generate_cache_filename(input_video, "audio", "mp3")  # Cache audio file
+    c_srt_file = generate_cache_filename(input_video, "audio", "srt")  # Cache SRT file
+    c_decision_file = generate_cache_filename(input_video, "decision", "json")  # Cache decision JSON
     
+
     output_dir = "data/out"
     final_output_dir = "data/final"
 
@@ -311,32 +318,36 @@ def main(input_video):
     # Step 0: Merge audio tracks
     print("Merging audio...")
     logging.info("Step 0: merging audio tracks...")
-    if not os.path.exists(temp_video):
+    if not os.path.exists(c_temp_video):
         temp_video = merge_audio_tracks(input_video, temp_video)
+        move_to_cache(temp_video)
     else:
         logging.info(f"Using cached merged video: {temp_video}")    
     
     # Step 1: Extract audio
     print("Extracting audio...")
     logging.info("Step 1: extracting audio...")
-    if not os.path.exists(audio_file):
+    if not os.path.exists(c_audio_file):
         extract_audio(temp_video, audio_file)
+        move_to_cache(audio_file)
     else:
         logging.info(f"Using cached audio file: {audio_file}")
     
     # Step 2: Generate subtitles
     print("Generating subtitles...")
     logging.info("Step 2: generating subtitles...")
-    if not os.path.exists(srt_file):
+    if not os.path.exists(c_srt_file):
         generate_subtitles(audio_file)
+        move_to_cache(srt_file)
     else:
         logging.info(f"Using cached subtitles file: {srt_file}")
 
     # Step 3: Decide on clip segments
     print("Deciding on clip segments...")
     logging.info("Step 3: deciding on clip segments...")
-    if not os.path.exists(decision_file):
+    if not os.path.exists(c_decision_file):
         decide_clips(srt_file, decision_file)
+        move_to_cache(decision_file)
     else:
         logging.info(f"Using cached decision file: {decision_file}")
 
@@ -372,10 +383,10 @@ def main(input_video):
             os.remove(input_segment)
 
     # Move files to cache instead of deleting
-    move_to_cache(srt_file)
-    move_to_cache(decision_file)
-    move_to_cache(temp_video)
-    move_to_cache(audio_file)
+    os.remove(temp_video)
+    os.remove(audio_file)
+    os.remove(srt_file)
+    os.remove(decision_file)
     
     # Clean up old files from the cache if needed
     clean_cache()
