@@ -3,16 +3,14 @@ import logging
 import os
 import datetime
 
-from src.utils.cache_manager import move_to_cache, clean_cache
-from src.utils.file_utils import generate_temp_filename, generate_cache_filename
+from utils.cache_manager import move_to_cache, clean_cache
+from utils.file_utils import generate_temp_filename, generate_cache_filename
 from utils.video_utils import merge_audio_tracks, split_video, extract_audio, parse_segments, convert_to_9_16, add_subtitles
-from src.utils.whisper_utils import generate_subtitles
-from src.utils.decision_maker import decide_clips
+from utils.whisper_utils import generate_subtitles
+from utils.decision_maker import decide_clips
 
 CACHE_DIR = "data/cache"
 TEMP_DIR = "data/temp"
-MAX_CACHE_SIZE_MB = 1000  # Maximum cache size in M
-MAX_CACHE_AGE_DAYS = 14  # Maximum file age in days
 
 def main(input_video):
     # Configure logging
@@ -53,9 +51,11 @@ def main(input_video):
     logging.info("Step 0: merging audio tracks...")
     if not os.path.exists(c_temp_video):
         temp_video = merge_audio_tracks(input_video, temp_video)
-        move_to_cache(temp_video)
+        if temp_video != input_video:
+            move_to_cache(temp_video)
     else:
-        logging.info(f"Using cached merged video: {temp_video}")    
+        logging.info(f"Using cached merged video: {temp_video}")   
+        temp_video = c_temp_video 
     
     # Step 1: Extract audio
     print("Extracting audio...")
@@ -65,15 +65,18 @@ def main(input_video):
         move_to_cache(audio_file)
     else:
         logging.info(f"Using cached audio file: {audio_file}")
+        audio_file = c_audio_file
+
     
     # Step 2: Generate subtitles
     print("Generating subtitles...")
     logging.info("Step 2: generating subtitles...")
     if not os.path.exists(c_srt_file):
-        generate_subtitles(audio_file)
+        generate_subtitles(audio_file, TEMP_DIR)
         move_to_cache(srt_file)
     else:
         logging.info(f"Using cached subtitles file: {srt_file}")
+        srt_file = c_srt_file
 
     # Step 3: Decide on clip segments
     print("Deciding on clip segments...")
@@ -83,6 +86,7 @@ def main(input_video):
         move_to_cache(decision_file)
     else:
         logging.info(f"Using cached decision file: {decision_file}")
+        decision_file = c_decision_file
 
     # Step 4: Split video into segments
     print("Splitting video into segments...")
@@ -107,7 +111,7 @@ def main(input_video):
             temp_audio = os.path.join("data/temp", f"audio_{i+1}.mp3")
             temp_srt = os.path.join("data/temp/", f"audio_{i+1}.srt")
             extract_audio(temp_9_16, temp_audio)
-            generate_subtitles(temp_audio, True)
+            generate_subtitles(temp_audio, TEMP_DIR, True)
 
             print(f"Adding subtitles to segment {i+1}...")
             add_subtitles(temp_9_16, temp_srt, final_output)
@@ -119,10 +123,10 @@ def main(input_video):
             os.remove(input_segment)
 
     # Move files to cache instead of deleting
-    os.remove(temp_video)
-    os.remove(audio_file)
-    os.remove(srt_file)
-    os.remove(decision_file)
+    if temp_video != c_temp_video: os.remove(temp_video)
+    if audio_file != c_audio_file: os.remove(audio_file)
+    if srt_file != c_srt_file: os.remove(srt_file)
+    if decision_file != c_decision_file: os.remove(decision_file)
     
     # Clean up old files from the cache if needed
     clean_cache()
@@ -131,5 +135,12 @@ def main(input_video):
     print("All processing complete!")
 
 if __name__ == "__main__":
-    input_video = r"data/input/test2.mp4"
-    main(input_video)
+    # input_video = r"A:\Projects\The Video Center\data\outputs\RAW__09-29-24__[09]\[VGL]-[ZEOW]-RAW__09-29-24__[09]-1.mp4"
+    # #input_video = r"data/input/test2.mp4"
+    # main(input_video)
+    
+    for input in [
+        r"A:\Projects\The Video Center\data\outputs\RAW__09-29-24__[09]\[VGL]-[ZEOW]-RAW__09-29-24__[09]-1.mp4", 
+        r"A:\Projects\The Video Center\data\outputs\RAW__09-29-24__[09]\[VGL]-[ZEOW]-RAW__09-29-24__[09]-2.mp4", 
+        r"A:\Projects\The Video Center\data\outputs\RAW__09-29-24__[09]\[VGL]-[ZEOW]-RAW__09-29-24__[09]-1.mp4"]:
+            main(input)

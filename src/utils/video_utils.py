@@ -1,3 +1,4 @@
+import os
 import subprocess
 from moviepy.editor import VideoFileClip
 import re
@@ -11,30 +12,81 @@ def extract_audio(video_path, audio_path):
     video.close()
 
 def merge_audio_tracks(input_file, output_file):
-    """Merge audio tracks from a video."""
+    # Count audio streams
+    num_audio_streams = count_audio_streams(input_file)
+    print(f"Number of audio streams: {num_audio_streams}")
+
+    if num_audio_streams <= 1:
+        print("Video has 0 or 1 audio stream. No merging needed.")
+        return input_file
+
+    # Construct FFmpeg command
     cmd = [
         'ffmpeg',
         '-i', input_file,
         '-c:v', 'copy',
-        '-filter_complex', 'amerge',
+        '-filter_complex', f'amerge=inputs={num_audio_streams}',
         '-c:a', 'aac',
         '-b:a', '256k',
         output_file
     ]
+
+    # Run FFmpeg command
     subprocess.run(cmd, check=True)
+    print(f"Audio tracks merged. Output saved as {output_file}")
     return output_file
 
-def split_video(input_file, output_dir, start_seconds, duration, output_file):
-    """Split video into segments based on the start time and duration."""
-    cmd = [
-        'ffmpeg',
-        '-ss', str(start_seconds),
-        '-i', input_file,
-        '-t', str(duration),
-        '-c', 'copy',
-        output_file
-    ]
-    subprocess.run(cmd, check=True)
+def time_to_seconds(time_str):
+    """Convert time string to seconds, handling both dot and comma as decimal separators."""
+    time_str = time_str.replace(',', '.')  # Replace comma with dot for proper float conversion
+    parts = time_str.split(':')
+    if len(parts) == 3:
+        h, m, s = parts
+    elif len(parts) == 2:
+        h = '0'
+        m, s = parts
+    else:
+        raise ValueError(f"Invalid time format: {time_str}")
+    return int(h) * 3600 + int(m) * 60 + float(s)
+
+def split_video(input_file, output_dir, segments):
+    """Split video into segments based on given timeframes."""
+    os.makedirs(output_dir, exist_ok=True)
+    
+    for i, segment in enumerate(segments):
+        timestamp = segment['timestamp']
+        start_str, end_str = timestamp.strip('[]').split(' --> ')
+        start_seconds = time_to_seconds(start_str)
+        end_seconds = time_to_seconds(end_str)
+        duration = end_seconds - start_seconds
+        
+        # Ensure duration is less than or equal to 59 seconds
+        if duration > 59:
+            duration = 59
+            end_seconds = start_seconds + duration
+            end_str = f"{int(end_seconds//3600):02d}:{int((end_seconds%3600)//60):02d}:{end_seconds%60:.3f}"
+        
+        output_file = os.path.join(output_dir, f"segment_{i+1}.mp4")
+        
+        cmd = [
+            'ffmpeg',
+            '-ss', str(start_seconds),
+            '-i', input_file,
+            '-t', str(duration),
+            '-c', 'copy',  # Use copy mode for speed
+            '-avoid_negative_ts', '1',
+            output_file
+        ]
+        
+        subprocess.run(cmd, check=True)
+        print(f"Created segment {i+1}: {output_file}")
+        
+        # Save metadata
+        with open(os.path.join(output_dir, f"segment_{i+1}_metadata.txt"), 'w') as f:
+            f.write(f"Title: {segment.get('title', '')}\n")
+            f.write(f"Description: {segment.get('description', '')}\n")
+            f.write(f"Content: {segment.get('content', '')}\n")
+            f.write(f"Virality Score: {segment.get('virality', '')}\n")
 
 def parse_segments(segment_file):
     """Parse JSON file into a list of segments."""

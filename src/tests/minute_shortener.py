@@ -31,6 +31,6 @@ def shorten_video(input_path, output_path, target_duration=59):
     subprocess.run(cmd, check=True)
 
 # Example usage
-input_video = "data/final/lm2-test-final_segment_6.mp4"
+input_video = r"C:\Users\video\The Studio\Downloads\Triumphant Return to the Hive!.mp4"
 output_video = "data/final/output_video_4.mp4"
 shorten_video(input_video, output_video)
