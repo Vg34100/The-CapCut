@@ -20,3 +20,4 @@
 ## Bugs to fix
 - Force under 1 minute
 - Find better model?
+- Set to 2 channels cause of 6 channels messing up Instagram upload

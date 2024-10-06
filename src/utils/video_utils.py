@@ -5,19 +5,34 @@ import re
 import json
 import subprocess
 
+from utils.log_manager import log_info, log_attribute, log_warning, log_error
+
+
 def extract_audio(video_path, audio_path):
     video = VideoFileClip(video_path)
     audio = video.audio
     audio.write_audiofile(audio_path)
     video.close()
 
+def count_audio_streams(input_file):
+    cmd = ['ffprobe', '-v', 'quiet', '-print_format', 'json', '-show_streams', input_file]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    log_info(result)
+    
+    # Parse the JSON output
+    data = json.loads(result.stdout)
+    
+    # Count audio streams
+    audio_streams = [stream for stream in data['streams'] if stream['codec_type'] == 'audio']
+    return len(audio_streams)
+
 def merge_audio_tracks(input_file, output_file):
     # Count audio streams
     num_audio_streams = count_audio_streams(input_file)
-    print(f"Number of audio streams: {num_audio_streams}")
+    log_attribute(f"Number of audio streams: {num_audio_streams}")
 
     if num_audio_streams <= 1:
-        print("Video has 0 or 1 audio stream. No merging needed.")
+        log_warning("Video has 0 or 1 audio stream. No merging needed.")
         return input_file
 
     # Construct FFmpeg command
@@ -33,7 +48,7 @@ def merge_audio_tracks(input_file, output_file):
 
     # Run FFmpeg command
     subprocess.run(cmd, check=True)
-    print(f"Audio tracks merged. Output saved as {output_file}")
+    log_attribute(f"Audio tracks merged. Output saved as {output_file}")
     return output_file
 
 def time_to_seconds(time_str):
@@ -79,10 +94,11 @@ def split_video(input_file, output_dir, segments):
         ]
         
         subprocess.run(cmd, check=True)
-        print(f"Created segment {i+1}: {output_file}")
+        log_attribute(f"Created segment {i+1}: {output_file}")
         
         # Save metadata
-        with open(os.path.join(output_dir, f"segment_{i+1}_metadata.txt"), 'w') as f:
+        with open(os.path.join(output_dir, f"{input_file}_segment_{i+1}_metadata.txt"), 'w') as f:
+            f.write(f"Vidoe: {input_file}\n")
             f.write(f"Title: {segment.get('title', '')}\n")
             f.write(f"Description: {segment.get('description', '')}\n")
             f.write(f"Content: {segment.get('content', '')}\n")
@@ -101,7 +117,7 @@ def parse_segments(segment_file):
             obj = json.loads(obj_str)
             segments.append(obj)
         except json.JSONDecodeError as e:
-            print(f"Error parsing JSON object: {e}")
+            log_error(f"Error parsing JSON object: {e}")
             continue
     return segments
 
@@ -119,6 +135,7 @@ def convert_to_9_16(input_file, output_file):
     pad_y = (target_height - scaled_height) // 2
 
     filter_complex = f'scale={scaled_width}:{scaled_height}:force_original_aspect_ratio=decrease,pad={target_width}:{target_height}:{pad_x}:{pad_y}:color=black'
+
     cmd = [
         'ffmpeg',
         '-i', input_file,
@@ -127,6 +144,9 @@ def convert_to_9_16(input_file, output_file):
         '-c:v', 'libx264',
         '-preset', 'ultrafast',
         '-crf', '23',
+        '-ac', '2',  # Downmix to 2 audio channels
+        '-c:a', 'aac',  # Re-encode the audio to AAC (or use 'copy' if you want the original codec)
+        '-b:a', '128k',  # Set the audio bitrate to 128 kbps (optional, can adjust as needed)
         output_file
     ]
 
@@ -137,17 +157,6 @@ def get_video_info(input_file):
     result = subprocess.run(cmd, capture_output=True, text=True)
     return json.loads(result.stdout)
 
-
-def count_audio_streams(input_file):
-    cmd = ['ffprobe', '-v', 'quiet', '-print_format', 'json', '-show_streams', input_file]
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    
-    # Parse the JSON output
-    data = json.loads(result.stdout)
-    
-    # Count audio streams
-    audio_streams = [stream for stream in data['streams'] if stream['codec_type'] == 'audio']
-    return len(audio_streams)
 
 def add_subtitles(input_video, subtitle_file, output_video, subtitle_format="srt"):
     
@@ -162,6 +171,9 @@ def add_subtitles(input_video, subtitle_file, output_video, subtitle_format="srt
         "ffmpeg",
         "-i", input_video,
         "-vf", f"subtitles={subtitle_file}:force_style='Alignment={options['align']},Fontname={options['font_name']},Fontsize={options['font_size']},MarginV={options['margin_v']}'",
+        '-ac', '2',  # Downmix to 2 audio channels
+        '-c:a', 'aac',  # Re-encode the audio to AAC (or use 'copy' if you want the original codec)
+        '-b:a', '127k',  # Set the audio bitrate to 128 kbps (optional, can adjust as needed)
         output_video
     ]
 

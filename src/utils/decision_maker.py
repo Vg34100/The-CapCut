@@ -1,5 +1,6 @@
 from langchain_ollama import OllamaLLM
 from langchain_core.prompts import ChatPromptTemplate
+from utils.log_manager import log_info, log_attribute, log_warning, log_error
 
 def decide_clips(srt_file, decision_file):
     template = """
@@ -78,7 +79,7 @@ def decide_clips(srt_file, decision_file):
     prompt = ChatPromptTemplate.from_template(template)
     chain = prompt | model
 
-    print(f"Reading from... {srt_file}")
+    log_attribute(f"Reading from... {srt_file}")
     f = open(srt_file, "r")
 
 
@@ -86,6 +87,7 @@ def decide_clips(srt_file, decision_file):
         "context": context,
         "transcript": f
     })
+    log_info(result)
 
     with open(decision_file, 'w') as tf:
         tf.write(result)
