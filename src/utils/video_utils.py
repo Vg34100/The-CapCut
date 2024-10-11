@@ -5,8 +5,10 @@ import re
 import json
 import subprocess
 
-from utils.log_manager import log_info, log_attribute, log_warning, log_error
-
+try:
+    from utils.log_manager import log_info, log_attribute, log_warning, log_error
+except ImportError:
+    from log_manager import log_info, log_attribute, log_warning, log_error
 
 def extract_audio(video_path, audio_path):
     video = VideoFileClip(video_path)
@@ -51,7 +53,7 @@ def merge_audio_tracks(input_file, output_file):
     log_attribute(f"Audio tracks merged. Output saved as {output_file}")
     return output_file
 
-def time_to_seconds(time_str):
+def old_time_to_seconds(time_str):
     """Convert time string to seconds, handling both dot and comma as decimal separators."""
     time_str = time_str.replace(',', '.')  # Replace comma with dot for proper float conversion
     parts = time_str.split(':')
@@ -63,6 +65,37 @@ def time_to_seconds(time_str):
     else:
         raise ValueError(f"Invalid time format: {time_str}")
     return int(h) * 3600 + int(m) * 60 + float(s)
+
+def time_to_seconds(time_str):
+    """Convert time string to seconds, handling dot, comma, and frame-based timestamps."""
+    
+    # Check if the timestamp contains a frame count (format: HH:MM:SS:FF)
+    frame_pattern = r"(\d{2}):(\d{2}):(\d{2}):(\d{2})"
+    match_frame = re.match(frame_pattern, time_str)
+    if match_frame:
+        h, m, s, frames = map(int, match_frame.groups())
+        # Assuming 30 frames per second (you can adjust this depending on your use case)
+        frames_to_seconds = frames / 30.0
+        return h * 3600 + m * 60 + s + frames_to_seconds
+
+    # Handle the case for milliseconds with a dot or comma separator (HH:MM:SS.mmm or HH:MM:SS,mmm)
+    time_str = time_str.replace(',', '.')  # Normalize comma to dot for float compatibility
+    parts = time_str.split(':')
+    
+    if len(parts) == 3:
+        h, m, s = parts[0], parts[1], parts[2]
+    elif len(parts) == 2:
+        h = '0'  # Handle case where hours are omitted (MM:SS.mmm)
+        m, s = parts[0], parts[1]
+    else:
+        raise ValueError(f"Invalid time format: {time_str}")
+
+    # Handle seconds and milliseconds
+    s_parts = s.split('.')
+    seconds = int(s_parts[0])
+    milliseconds = float(f"0.{s_parts[1]}") if len(s_parts) == 2 else 0
+
+    return int(h) * 3600 + int(m) * 60 + seconds + milliseconds
 
 def split_video(input_file, output_dir, segments):
     """Split video into segments based on given timeframes."""
@@ -97,8 +130,9 @@ def split_video(input_file, output_dir, segments):
         log_attribute(f"Created segment {i+1}: {output_file}")
         
         # Save metadata
-        with open(os.path.join(output_dir, f"{input_file}_segment_{i+1}_metadata.txt"), 'w') as f:
-            f.write(f"Vidoe: {input_file}\n")
+        input_base_name = os.path.splitext(os.path.basename(input_file))[0]
+        with open(os.path.join(output_dir, f"{input_base_name}_segment_{i+1}_metadata.txt"), 'w') as f:
+            f.write(f"Video: {input_file}\n")
             f.write(f"Title: {segment.get('title', '')}\n")
             f.write(f"Description: {segment.get('description', '')}\n")
             f.write(f"Content: {segment.get('content', '')}\n")
@@ -178,3 +212,10 @@ def add_subtitles(input_video, subtitle_file, output_video, subtitle_format="srt
     ]
 
     subprocess.run(ffmpeg_cmd, check=True)
+
+if __name__ == "__main__":
+    # Example usage:
+    print(time_to_seconds("00:01:32:30"))  # Frame-based timestamp
+    print(time_to_seconds("00:10:52.640"))  # Comma-separated milliseconds
+    print(old_time_to_seconds("00:10:52,640"))  # Comma-separated milliseconds
+    print(time_to_seconds("00:06:30.680"))  # Dot-separated milliseconds
